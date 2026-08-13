@@ -1,0 +1,9 @@
+# Server environment variables
+.env
+.env.local
+
+# Node modules
+node_modules/
+
+# Logs
+*.log

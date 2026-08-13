@@ -1,0 +1,52 @@
+# =========================================================================
+# 🐅 StripeID Sentinel — Pench Tiger Reserve Intelligence Platform
+# Complete Project Requirements & Dependencies Specification
+# =========================================================================
+
+# -------------------------------------------------------------------------
+# 1. System & Engine Requirements
+# -------------------------------------------------------------------------
+Node.js>=18.0.0
+npm>=9.0.0
+Google-Gemini-Vision-AI-API-Key (Model: gemini-3.5-flash)
+Google-Maps-JavaScript-API (Libraries: geometry, visualization)
+
+# -------------------------------------------------------------------------
+# 2. Root Task Concurrently Runner Dependencies
+# Install Command: npm install
+# -------------------------------------------------------------------------
+concurrently==9.1.2
+
+# -------------------------------------------------------------------------
+# 3. Express REST API Backend Dependencies (server/package.json)
+# Install Command: cd server && npm install
+# -------------------------------------------------------------------------
+express==4.21.2
+cors==2.8.5
+multer==1.4.5-lts.1
+@turf/turf==7.1.0
+uuid==11.0.5
+dotenv==16.4.7
+
+# -------------------------------------------------------------------------
+# 4. Vite React 19 Local HTTPS UI Dependencies (client/package.json)
+# Install Command: cd client && npm install
+# -------------------------------------------------------------------------
+react==19.0.0
+react-dom==19.0.0
+@googlemaps/js-api-loader==1.16.8
+lucide-react==0.475.0
+canvas-confetti==1.9.4
+vite==6.1.0
+@vitejs/plugin-basic-ssl==2.3.0
+@vitejs/plugin-react==4.3.4
+tailwindcss==3.4.17
+autoprefixer==10.4.20
+postcss==8.5.1
+
+# =========================================================================
+# ONE-COMMAND AUTOMATED INSTALLATION PROMPT:
+#   npm run setup
+# OR
+#   npm install && cd server && npm install && cd ../client && npm install
+# =========================================================================

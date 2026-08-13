@@ -1,0 +1,28 @@
+{
+  "name": "stripeid-sentinel-pench-intelligence",
+  "version": "2026.4.1",
+  "description": "AI-Powered Automated Camera Trap Triage & Tiger Movement Intelligence Platform for Pench Tiger Reserve",
+  "main": "server/index.js",
+  "type": "module",
+  "scripts": {
+    "postinstall": "cd server && npm install && cd ../client && npm install",
+    "server": "cd server && npm run start",
+    "client": "cd client && npm run dev",
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "build": "cd client && npm run build"
+  },
+  "keywords": [
+    "wildlife-ai",
+    "tiger-intelligence",
+    "camera-trap-triage",
+    "gemini-vision-ai",
+    "pench-tiger-reserve",
+    "gis-mapping",
+    "google-maps-platform"
+  ],
+  "author": "Pench Tiger Reserve AI Team",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^9.2.4"
+  }
+}
