@@ -42,7 +42,7 @@ export default function StripeMatcher({
   };
 
   const handleDeleteCapture = async (captureId) => {
-    if (window.confirm('Are you sure you want to delete this field capture?')) {
+    if (window.confirm('Are you sure you want to permanently delete this field capture match candidate?')) {
       await onDeleteCapture?.(captureId);
       if (reviewModalItem?.id === captureId) {
         setReviewModalItem(null);
@@ -154,13 +154,13 @@ export default function StripeMatcher({
                     className="flex-1 bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-black font-extrabold py-2 rounded-xl text-xs shadow-md transition flex items-center justify-center space-x-1.5"
                   >
                     <Layers className="w-4 h-4" />
-                    <span>Verify Match</span>
+                    <span>Verify Flank Stripe Match</span>
                   </button>
 
                   <button
                     onClick={() => handleDeleteCapture(item.id)}
-                    title="Delete capture"
-                    className="p-2 bg-red-950/80 hover:bg-red-900 border border-red-800/60 text-red-400 hover:text-red-200 rounded-xl transition"
+                    title="Delete capture match"
+                    className="p-2 bg-red-950/80 hover:bg-red-900 border border-red-800/60 text-red-400 hover:text-red-200 rounded-xl transition shadow-md"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -300,7 +300,7 @@ export default function StripeMatcher({
                 <Layers className="w-5 h-5" />
                 <span>Side-by-Side AI Stripe Pattern Feature Matcher</span>
               </div>
-              <button onClick={() => setReviewModalItem(null)} className="text-gray-400 hover:text-white">✕</button>
+              <button onClick={() => setReviewModalItem(null)} className="text-gray-400 hover:text-white text-lg">✕</button>
             </div>
 
             {/* Side-by-Side Image Comparison Canvas */}
@@ -352,9 +352,10 @@ export default function StripeMatcher({
               </p>
             </div>
 
-            {/* Decision Controls */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 border-t border-emerald-900/50">
+            {/* Decision Controls with Delete Action */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-emerald-900/50">
               
+              {/* Option to enroll as new tiger */}
               <div className="flex-1 w-full sm:w-auto flex items-center space-x-2">
                 <input
                   type="text"
@@ -372,18 +373,19 @@ export default function StripeMatcher({
                 </button>
               </div>
 
+              {/* Delete match or confirm match */}
               <div className="flex items-center space-x-2 w-full sm:w-auto justify-end">
                 <button
                   onClick={() => handleDeleteCapture(reviewModalItem.id)}
-                  className="bg-red-950/80 hover:bg-red-900 border border-red-800/80 text-red-300 hover:text-white font-bold text-xs px-3.5 py-2.5 rounded-xl transition shadow-md flex items-center space-x-1.5"
+                  className="bg-red-600/20 hover:bg-red-600/40 border border-red-500/60 text-red-300 hover:text-red-100 font-bold text-xs px-4 py-2 rounded-xl transition shadow-lg flex items-center space-x-1.5 whitespace-nowrap"
                 >
-                  <Trash2 className="w-4 h-4" />
-                  <span>Discard Capture</span>
+                  <Trash2 className="w-4 h-4 text-red-400" />
+                  <span>Delete Match Record</span>
                 </button>
 
                 <button
                   onClick={() => handleApprove(reviewModalItem.id, 'PTR-T-30')}
-                  className="bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs px-5 py-2.5 rounded-xl transition shadow-xl flex items-center space-x-1.5 justify-center"
+                  className="bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs px-5 py-2 rounded-xl transition shadow-xl flex items-center space-x-1.5 justify-center whitespace-nowrap"
                 >
                   <CheckCircle2 className="w-4 h-4" />
                   <span>Confirm Match to PTR-T-30</span>
