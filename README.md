@@ -6,7 +6,7 @@
 [![Node.js](https://img.shields.io/badge/Backend-Express.js_Node_v20+-059669?style=flat-square&logo=node.js)](https://nodejs.org)
 [![Vite](https://img.shields.io/badge/Frontend-Vite_React_19_HTTPS-10B981?style=flat-square&logo=vite)](https://vitejs.dev)
 [![Gemini Vision AI](https://img.shields.io/badge/AI_Vision-Google_Gemini_3.5_Flash-F59E0B?style=flat-square&logo=google)](https://ai.google.dev)
-[![License https://img.shields.io/badge/License-CC0_1.0-lightgrey?style=flat-square](https://img.shields.io/badge/License-CC0_1.0-lightgrey?style=flat-square)
+![License https://img.shields.io/badge/License-CC0_1.0-lightgrey?style=flat-square](https://img.shields.io/badge/License-CC0_1.0-lightgrey?style=flat-square)
 
 ---
 
