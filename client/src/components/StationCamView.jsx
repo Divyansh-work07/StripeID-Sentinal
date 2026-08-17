@@ -18,10 +18,25 @@ export default function StationCamView({ stationId, onBack }) {
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
+  const offscreenCanvasRef = useRef(null);
   const prevFrameRef = useRef(null);
   const streamRef = useRef(null);
   const cooldownRef = useRef(0);
   const audioContextRef = useRef(null);
+  const animFrameRef = useRef(null);
+
+  // Sync state to refs to prevent stale closure issues in high-frequency loops
+  const nightVisionRef = useRef(nightVisionMode);
+  const isProcessingRef = useRef(isProcessing);
+  const bioAcousticActiveRef = useRef(bioAcousticActive);
+  const autoTriggerRef = useRef(autoTrigger);
+  const isStreamingRef = useRef(isStreaming);
+
+  useEffect(() => { nightVisionRef.current = nightVisionMode; }, [nightVisionMode]);
+  useEffect(() => { isProcessingRef.current = isProcessing; }, [isProcessing]);
+  useEffect(() => { bioAcousticActiveRef.current = bioAcousticActive; }, [bioAcousticActive]);
+  useEffect(() => { autoTriggerRef.current = autoTrigger; }, [autoTrigger]);
+  useEffect(() => { isStreamingRef.current = isStreaming; }, [isStreaming]);
 
   // Connection Signal to Main Server Portal
   useEffect(() => {
@@ -60,6 +75,26 @@ export default function StationCamView({ stationId, onBack }) {
       .catch(e => console.error(e));
   }, [stationId]);
 
+  // Stop camera, audio context, and animation frame loops
+  const stopMobileCamera = () => {
+    if (animFrameRef.current) {
+      cancelAnimationFrame(animFrameRef.current);
+      animFrameRef.current = null;
+    }
+    if (audioContextRef.current) {
+      audioContextRef.current.close().catch(e => console.error(e));
+      audioContextRef.current = null;
+    }
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(t => t.stop());
+      streamRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    setIsStreaming(false);
+  };
+
   // Start mobile camera & Bio-Acoustic microphone analyzer
   const startMobileCamera = async () => {
     try {
@@ -95,14 +130,14 @@ export default function StationCamView({ stationId, onBack }) {
           const avgLevel = Math.round(lowFreqSum / 14);
           setBioAudioLevel(avgLevel);
 
-          if (avgLevel > 145 && bioAcousticActive) {
+          if (avgLevel > 145 && bioAcousticActiveRef.current && !isProcessingRef.current) {
             setBioAudioStatus('🔊 BIO-ACOUSTIC ALERT: Tiger Roar / Alarm Call Resonance Detected!');
             captureAndUpload();
           }
 
-          requestAnimationFrame(checkAudio);
+          animFrameRef.current = requestAnimationFrame(checkAudio);
         };
-        checkAudio();
+        animFrameRef.current = requestAnimationFrame(checkAudio);
       } catch (aErr) {
         console.error('Audio analyzer init:', aErr);
       }
@@ -123,21 +158,6 @@ export default function StationCamView({ stationId, onBack }) {
     }
   };
 
-  const stopMobileCamera = () => {
-    if (audioContextRef.current) {
-      audioContextRef.current.close();
-      audioContextRef.current = null;
-    }
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(t => t.stop());
-      streamRef.current = null;
-    }
-    if (videoRef.current) {
-      videoRef.current.srcObject = null;
-    }
-    setIsStreaming(false);
-  };
-
   useEffect(() => {
     startMobileCamera();
     return () => stopMobileCamera();
@@ -152,14 +172,19 @@ export default function StationCamView({ stationId, onBack }) {
     if (now - cooldownRef.current < 6000) return;
     cooldownRef.current = now;
 
+    const currentNightVision = nightVisionRef.current;
     setIsProcessing(true);
     setSensorStatusText(
-      nightVisionMode
+      currentNightVision
         ? '🌙 Night Vision Tiger Candidate Detected! Submitting IR Frame to Gemini AI...'
         : '🐅 Tiger Candidate Detected! Submitting Frame to Gemini AI...'
     );
 
-    const canvas = document.createElement('canvas');
+    // Reuse persistent offscreen canvas to avoid GC allocations
+    if (!offscreenCanvasRef.current) {
+      offscreenCanvasRef.current = document.createElement('canvas');
+    }
+    const canvas = offscreenCanvasRef.current;
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     const ctx = canvas.getContext('2d');
@@ -172,7 +197,7 @@ export default function StationCamView({ stationId, onBack }) {
       const formData = new FormData();
       formData.append('file', file);
       formData.append('stationId', stationId);
-      formData.append('isNightVision', nightVisionMode ? 'true' : 'false');
+      formData.append('isNightVision', currentNightVision ? 'true' : 'false');
 
       try {
         const apiKey = localStorage.getItem('GEMINI_API_KEY') || 'YOUR_GEMINI_API_KEY';
@@ -207,12 +232,16 @@ export default function StationCamView({ stationId, onBack }) {
   // REAL-TIME TIGER SUBJECT VISUAL DETECTOR (Daytime Color OR Night-Vision Thermal IR Eye-Shine / Silhouette)
   useEffect(() => {
     const interval = setInterval(() => {
-      if (!isStreaming || !autoTrigger || isProcessing) return;
+      if (!isStreamingRef.current || !autoTriggerRef.current || isProcessingRef.current) return;
 
       const video = videoRef.current;
       if (!video || video.paused || video.ended || !video.videoWidth) return;
 
-      const canvas = canvasRef.current || document.createElement('canvas');
+      // Reuse canvasRef or fallback offscreen canvas
+      if (!canvasRef.current) {
+        canvasRef.current = document.createElement('canvas');
+      }
+      const canvas = canvasRef.current;
       canvas.width = 160;
       canvas.height = 120;
       const ctx = canvas.getContext('2d');
@@ -223,7 +252,7 @@ export default function StationCamView({ stationId, onBack }) {
 
       let tigerColorPixels = 0;
       let stripeEdgeScore = 0;
-      let nightEyeShinePixels = 0; // High intensity eye-shine points in night mode
+      let nightEyeShinePixels = 0;
 
       for (let i = 0; i < data.length; i += 8) {
         const r = data[i];
@@ -236,7 +265,7 @@ export default function StationCamView({ stationId, onBack }) {
         }
 
         // 2. Night Vision Eye-Shine & High Thermal Contrast Filter
-        if (nightVisionMode) {
+        if (nightVisionRef.current) {
           if (r > 210 && g > 210 && b > 210) {
             nightEyeShinePixels++;
           }
@@ -261,7 +290,7 @@ export default function StationCamView({ stationId, onBack }) {
       }
 
       // NIGHT VISION TRIGGER: Triggers on Night Eye-Shine / Thermal Contrast / Flank Stripes in Darkness!
-      if (nightVisionMode) {
+      if (nightVisionRef.current) {
         if (motionPixels > 350 && (nightEyeShinePixels > 40 || stripeEdgeScore > 160)) {
           captureAndUpload();
         }
@@ -276,7 +305,7 @@ export default function StationCamView({ stationId, onBack }) {
     }, 450);
 
     return () => clearInterval(interval);
-  }, [isStreaming, autoTrigger, isProcessing, nightVisionMode]);
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#070F0A] text-white p-4 max-w-md mx-auto flex flex-col justify-between space-y-4">
