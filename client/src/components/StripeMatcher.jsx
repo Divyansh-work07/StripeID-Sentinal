@@ -1,8 +1,20 @@
 import React, { useState } from 'react';
 import confetti from 'canvas-confetti';
-import { Eye, CheckCircle2, XCircle, UserPlus, Sparkles, Sliders, Shield, Search, ArrowRight, Zap, Info, Filter, Camera, Cpu, FileText, Navigation, Layers } from 'lucide-react';
+import { 
+  Eye, CheckCircle2, XCircle, UserPlus, Sparkles, Sliders, Shield, 
+  Search, ArrowRight, Zap, Info, Filter, Camera, Cpu, FileText, 
+  Navigation, Layers, Trash2 
+} from 'lucide-react';
 
-export default function StripeMatcher({ tigers, pendingReviews, onApproveMatch, onRejectAndEnroll, geminiApiKey }) {
+export default function StripeMatcher({ 
+  tigers, 
+  pendingReviews, 
+  onApproveMatch, 
+  onRejectAndEnroll, 
+  onDeleteCapture, 
+  onDeleteTiger, 
+  geminiApiKey 
+}) {
   const [selectedTigerId, setSelectedTigerId] = useState(tigers?.[0]?.id || 'PTR-T-30');
   const [reviewModalItem, setReviewModalItem] = useState(null);
   const [newTigerNameInput, setNewTigerNameInput] = useState('');
@@ -19,14 +31,33 @@ export default function StripeMatcher({ tigers, pendingReviews, onApproveMatch, 
       spread: 60,
       origin: { y: 0.6 }
     });
-    await onApproveMatch(captureId, tigerId);
+    await onApproveMatch?.(captureId, tigerId);
     setReviewModalItem(null);
   };
 
   const handleReject = async (captureId) => {
-    await onRejectAndEnroll(captureId, newTigerNameInput || 'New Enrolled Tigress Candidate', 'Female');
+    await onRejectAndEnroll?.(captureId, newTigerNameInput || 'New Enrolled Tigress Candidate', 'Female');
     setReviewModalItem(null);
     setNewTigerNameInput('');
+  };
+
+  const handleDeleteCapture = async (captureId) => {
+    if (window.confirm('Are you sure you want to delete this field capture?')) {
+      await onDeleteCapture?.(captureId);
+      if (reviewModalItem?.id === captureId) {
+        setReviewModalItem(null);
+      }
+    }
+  };
+
+  const handleDeleteTiger = async (tigerId) => {
+    if (window.confirm(`Are you sure you want to delete tiger ${tigerId} from the catalog?`)) {
+      await onDeleteTiger?.(tigerId);
+      if (selectedTigerId === tigerId) {
+        const remaining = tigers?.filter(t => t.id !== tigerId);
+        setSelectedTigerId(remaining?.[0]?.id || '');
+      }
+    }
   };
 
   const handleGenerateAiReport = async () => {
@@ -97,7 +128,7 @@ export default function StripeMatcher({ tigers, pendingReviews, onApproveMatch, 
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {pendingReviews.map(item => (
-              <div key={item.id} className="bg-[#070F0A] p-4 rounded-xl border border-amber-900/50 space-y-3">
+              <div key={item.id} className="bg-[#070F0A] p-4 rounded-xl border border-amber-900/50 space-y-3 relative group">
                 <div className="relative rounded-lg overflow-hidden h-40 bg-black">
                   <img
                     src={item.imageUrl}
@@ -117,13 +148,23 @@ export default function StripeMatcher({ tigers, pendingReviews, onApproveMatch, 
                   <p className="text-[11px] text-gray-400 truncate mt-0.5">{item.reviewReason || 'AI Flank match candidate'}</p>
                 </div>
 
-                <button
-                  onClick={() => setReviewModalItem(item)}
-                  className="w-full bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-black font-extrabold py-2 rounded-xl text-xs shadow-md transition flex items-center justify-center space-x-1.5"
-                >
-                  <Layers className="w-4 h-4" />
-                  <span>Verify Flank Stripe Match</span>
-                </button>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => setReviewModalItem(item)}
+                    className="flex-1 bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-black font-extrabold py-2 rounded-xl text-xs shadow-md transition flex items-center justify-center space-x-1.5"
+                  >
+                    <Layers className="w-4 h-4" />
+                    <span>Verify Match</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleDeleteCapture(item.id)}
+                    title="Delete capture"
+                    className="p-2 bg-red-950/80 hover:bg-red-900 border border-red-800/60 text-red-400 hover:text-red-200 rounded-xl transition"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -205,14 +246,24 @@ export default function StripeMatcher({ tigers, pendingReviews, onApproveMatch, 
                   </div>
                 </div>
 
-                <button
-                  onClick={handleGenerateAiReport}
-                  disabled={isGeneratingReport}
-                  className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-lg transition flex items-center space-x-2 disabled:opacity-40"
-                >
-                  <FileText className="w-4 h-4" />
-                  <span>{isGeneratingReport ? 'AI Generating Report...' : 'Generate AI Movement Report'}</span>
-                </button>
+                <div className="flex items-center space-x-2 w-full sm:w-auto justify-end">
+                  <button
+                    onClick={handleGenerateAiReport}
+                    disabled={isGeneratingReport}
+                    className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-lg transition flex items-center space-x-2 disabled:opacity-40"
+                  >
+                    <FileText className="w-4 h-4" />
+                    <span>{isGeneratingReport ? 'AI Generating Report...' : 'Generate AI Movement Report'}</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleDeleteTiger(activeTiger.id)}
+                    title="Delete tiger from catalog"
+                    className="p-2.5 bg-red-950/80 hover:bg-red-900 border border-red-800/60 text-red-400 hover:text-red-200 rounded-xl transition shadow-lg"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
 
               {/* AI Movement Report Box */}
@@ -302,7 +353,7 @@ export default function StripeMatcher({ tigers, pendingReviews, onApproveMatch, 
             </div>
 
             {/* Decision Controls */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2 border-t border-emerald-900/50">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 border-t border-emerald-900/50">
               
               <div className="flex-1 w-full sm:w-auto flex items-center space-x-2">
                 <input
@@ -321,13 +372,23 @@ export default function StripeMatcher({ tigers, pendingReviews, onApproveMatch, 
                 </button>
               </div>
 
-              <button
-                onClick={() => handleApprove(reviewModalItem.id, 'PTR-T-30')}
-                className="bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs px-6 py-2.5 rounded-xl transition shadow-xl flex items-center space-x-1.5 w-full sm:w-auto justify-center"
-              >
-                <CheckCircle2 className="w-4 h-4" />
-                <span>Confirm Match to PTR-T-30</span>
-              </button>
+              <div className="flex items-center space-x-2 w-full sm:w-auto justify-end">
+                <button
+                  onClick={() => handleDeleteCapture(reviewModalItem.id)}
+                  className="bg-red-950/80 hover:bg-red-900 border border-red-800/80 text-red-300 hover:text-white font-bold text-xs px-3.5 py-2.5 rounded-xl transition shadow-md flex items-center space-x-1.5"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span>Discard Capture</span>
+                </button>
+
+                <button
+                  onClick={() => handleApprove(reviewModalItem.id, 'PTR-T-30')}
+                  className="bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs px-5 py-2.5 rounded-xl transition shadow-xl flex items-center space-x-1.5 justify-center"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Confirm Match to PTR-T-30</span>
+                </button>
+              </div>
 
             </div>
 
