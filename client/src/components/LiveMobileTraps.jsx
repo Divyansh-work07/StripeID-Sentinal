@@ -92,6 +92,33 @@ export default function LiveMobileTraps({ stations: initialStations, onUploadSuc
     setActiveCameras(prev => prev.filter(c => c.id !== camId));
   };
 
+  // Delete unwanted captured image
+  const handleDeleteCapturedImage = async (camId, lastResult) => {
+    if (!window.confirm('Are you sure you want to delete this captured image?')) return;
+
+    try {
+      // Send DELETE request to API if image ID exists
+      const imageId = lastResult?.id || lastResult?._id || lastResult?.filename;
+      if (imageId) {
+        await fetch(`/api/triage/${imageId}`, {
+          method: 'DELETE',
+        }).catch(err => console.error('Error deleting image from server:', err));
+      }
+
+      // Clear captured image data from camera slot state
+      setActiveCameras(prev => prev.map(c => c.id === camId ? {
+        ...c,
+        lastResult: null,
+        lastCapturedAt: null,
+        statusText: '🟢 Monitoring Stream'
+      } : c));
+
+      if (onUploadSuccess) onUploadSuccess();
+    } catch (err) {
+      console.error('Failed to delete captured image:', err);
+    }
+  };
+
   // Start Camera Stream
   const startCamera = async (camId) => {
     const cam = activeCameras.find(c => c.id === camId);
@@ -379,7 +406,7 @@ export default function LiveMobileTraps({ stations: initialStations, onUploadSuc
                     <button
                       onClick={() => handleRemoveStream(cam.id)}
                       className="text-gray-400 hover:text-rose-400 p-1 transition"
-                      title="Remove Stream"
+                      title="Remove Stream Slot"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -521,6 +548,53 @@ export default function LiveMobileTraps({ stations: initialStations, onUploadSuc
                     <span>📸 Manual Tiger Snap</span>
                   </button>
                 </div>
+
+                {/* Last Captured Image Preview & Delete Toolbar */}
+                {(cam.lastResult || cam.lastCapturedAt) && (
+                  <div className="bg-[#0B150F] border border-emerald-800/60 rounded-xl p-3 space-y-2 relative">
+                    <div className="flex items-center justify-between text-xs border-b border-emerald-900/40 pb-2">
+                      <span className="font-bold text-emerald-400 flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>Last Capture ({cam.lastCapturedAt})</span>
+                      </span>
+
+                      {/* Delete Captured Image Button */}
+                      <button
+                        onClick={() => handleDeleteCapturedImage(cam.id, cam.lastResult)}
+                        className="bg-rose-950/80 hover:bg-rose-900 text-rose-300 border border-rose-800/60 px-2 py-1 rounded-lg text-[10px] font-bold transition flex items-center space-x-1"
+                        title="Delete Unwanted Captured Image"
+                      >
+                        <Trash2 className="w-3 h-3 text-rose-400" />
+                        <span>Delete Image</span>
+                      </button>
+                    </div>
+
+                    <div className="flex gap-3 items-center">
+                      {(cam.lastResult?.imageUrl || cam.lastResult?.url || cam.lastResult?.image) && (
+                        <img
+                          src={cam.lastResult.imageUrl || cam.lastResult.url || cam.lastResult.image}
+                          alt="Captured Snapshot"
+                          className="w-14 h-14 object-cover rounded-lg border border-emerald-800/60 shrink-0"
+                        />
+                      )}
+                      <div className="flex-1 text-xs space-y-1">
+                        <div className="font-bold text-white truncate">
+                          {cam.lastResult?.species || cam.lastResult?.label || 'Captured Snapshot'}
+                        </div>
+                        {cam.lastResult?.confidence && (
+                          <div className="text-[10px] text-gray-400">
+                            Confidence: <span className="text-emerald-400 font-mono">{(cam.lastResult.confidence * 100).toFixed(0)}%</span>
+                          </div>
+                        )}
+                        {cam.lastResult?.status && (
+                          <div className="text-[10px] text-gray-300">
+                            Status: {cam.lastResult.status}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
 
               </div>
             );
